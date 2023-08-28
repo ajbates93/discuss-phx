@@ -2,22 +2,55 @@ defmodule DiscussWeb.Router do
   use DiscussWeb, :router
 
   pipeline :browser do
-    plug :accepts, ["html"]
+    plug :accepts, ["html", "json"]
     plug :fetch_session
     plug :fetch_live_flash
     plug :put_root_layout, html: {DiscussWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
+    plug DiscussWeb.Plugs.Locale, "en"
   end
 
   pipeline :api do
     plug :accepts, ["json"]
   end
 
+  pipeline :auth do
+    plug :browser
+    # plug :ensure_authenticated_user
+    # plug :ensure_user_owns_review
+  end
+
+  # scope "/api", DiscussWeb.Api, as: :api do
+  #   pipe_through :api
+
+  #   scope "/v1", V1, as: :v1 do
+  #     resources "/images", ImageController
+  #     resources "/reviews", ReviewController
+  #     resources "/users", UserController
+  #   end
+  # end
+
+  scope "/reviews", DiscussWeb do
+    pipe_through :auth
+
+    resources "/", ReviewController
+  end
+
   scope "/", DiscussWeb do
     pipe_through :browser
 
     get "/", PageController, :home
+    get "/discuss", DiscussController, :index
+    get "/discuss/:messenger", DiscussController, :show
+  end
+
+  scope "/admin", DiscussWeb.Admin do
+    pipe_through :browser
+
+    resources "/images", ImageController
+    resources "/reviews", ReviewController
+    resources "/users", UserController
   end
 
   # Other scopes may use custom stacks.
